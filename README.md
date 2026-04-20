@@ -3,9 +3,11 @@
 `Remove Text Extra Spaces v3` 是一個專門用來整理 AI 語音轉文字、OCR 擷取文字、以及中英混排 TXT 內容的小工具。它可以快速清掉多餘空格、修正常見標點格式，並支援兩種使用方式：批次處理文字檔，或直接把短文字貼進 GUI 即時整理。
 
 相關文章：
-[AI 語音轉文字格式太亂？獨創免安裝小工具「Remove Text Extra Spaces」幫你一鍵搞定！](https://taoyutsun.blogspot.com/2025/02/Remove-Text-Extra-Spaces.html)
+- [AI 語音轉文字格式太亂？獨創免安裝小工具「Remove Text Extra Spaces」幫你一鍵搞定！](https://taoyutsun.blogspot.com/2025/02/Remove-Text-Extra-Spaces.html)
+- [從雲端 AI LLM 到本地 AI Agent：我用 Vibe Coding 升級 Remove Text Extra Spaces](https://taoyutsun.blogspot.com/2026/04/cloud-ai-llm-to-local-ai-agent-vibe-coding-upgrade-remove-text-extra-spaces.html)
 
 上面的部落格文章介紹的是本工具的初始版本，當時以單一 TXT 檔案清理為主。  
+後面這篇則記錄了本工具升級到 `v3` 的過程，以及從雲端 AI LLM 協作走到本地 AI Agent 協作的差異。  
 目前這個 repository 內提供的是後續升級的 `v3` 版本，功能比文章中的初版更完整。
 
 ## v3 版本重點
