@@ -46,7 +46,7 @@
 
 - Windows 10 / 11
 - Python 3.10 以上
-- 不需安裝第三方套件即可執行主程式
+- `tkinterdnd2`（拖曳 `.txt` 檔功能所需）
 
 #### 下載原始碼
 
@@ -67,6 +67,7 @@ cd remove-text-extra-spaces
 #### 執行主程式
 
 ```powershell
+python -m pip install tkinterdnd2
 python .\remove_text_extra_spaces_v3.py
 ```
 
@@ -98,6 +99,9 @@ python .\remove_text_extra_spaces_v3.py
 meeting_notes.txt
 → meeting_notes_cleaned.txt
 ```
+
+補充：
+若拖曳 `.txt` 檔沒有反應，請先確認程式不是以「系統管理員身份」執行。Windows 會阻擋一般檔案總管直接把檔案拖進較高權限的視窗。
 
 ### 2. 直接貼文字
 

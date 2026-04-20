@@ -5,3 +5,4 @@ dist/
 *.exe
 *_cleaned.txt
 legacy/
+_TempScripts/

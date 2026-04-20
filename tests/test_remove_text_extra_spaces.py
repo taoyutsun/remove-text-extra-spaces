@@ -12,6 +12,24 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CleanTextUltimateTests(unittest.TestCase):
+    class _FakeRoot:
+        def __init__(self) -> None:
+            self.tk = MODULE.tk.Tcl()
+
+    def test_parse_drop_file_list_supports_braced_paths(self) -> None:
+        root = self._FakeRoot()
+        raw = "{C:/Temp/hello world.txt} C:/Temp/second.txt"
+
+        self.assertEqual(
+            MODULE.parse_drop_file_list(root, raw),
+            ["C:/Temp/hello world.txt", "C:/Temp/second.txt"],
+        )
+
+    def test_parse_drop_file_list_returns_empty_for_blank_input(self) -> None:
+        root = self._FakeRoot()
+
+        self.assertEqual(MODULE.parse_drop_file_list(root, "   "), [])
+
     def test_remove_spaces_between_chinese_characters(self) -> None:
         self.assertEqual(MODULE.clean_text_ultimate("我 是 一 個 學 生"), "我是一個學生")
 

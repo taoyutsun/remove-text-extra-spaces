@@ -1,9 +1,15 @@
 import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+
+try:
+    from tkinterdnd2 import COPY, DND_FILES, TkinterDnD
+except ImportError:  # pragma: no cover - source execution fallback only
+    COPY = None
+    DND_FILES = None
+    TkinterDnD = None
 
 
 CJK_RANGE = r"\u4e00-\u9fff"
@@ -101,85 +107,31 @@ def build_options_from_vars(option_vars: dict[str, tk.BooleanVar]) -> CleanOptio
     )
 
 
-class WindowsFileDropTarget:
-    WM_DROPFILES = 0x0233
-    GWLP_WNDPROC = -4
+def iter_widget_tree(widget: tk.Misc):
+    yield widget
+    for child in widget.winfo_children():
+        yield from iter_widget_tree(child)
 
-    def __init__(self, widget: tk.Misc, on_drop) -> None:
-        self.widget = widget
-        self.on_drop = on_drop
-        self.hwnd = widget.winfo_id()
-        self._shell32 = None
-        self._user32 = None
-        self._old_proc = None
-        self._proc = None
 
-        if sys.platform != "win32":
-            return
+def parse_drop_file_list(root: tk.Misc, raw_data: str) -> list[str]:
+    raw_data = (raw_data or "").strip()
+    if not raw_data:
+        return []
 
-        import ctypes
-        from ctypes import wintypes
+    try:
+        paths = root.tk.splitlist(raw_data)
+    except tk.TclError:
+        parts = re.findall(r"\{[^}]+\}|[^\s]+", raw_data)
+        paths = [
+            part[1:-1] if part.startswith("{") and part.endswith("}") else part
+            for part in parts
+        ]
 
-        self._ctypes = ctypes
-        self._shell32 = ctypes.windll.shell32
-        self._user32 = ctypes.windll.user32
-
-        wndproc_type = ctypes.WINFUNCTYPE(
-            wintypes.LPARAM,
-            wintypes.HWND,
-            wintypes.UINT,
-            wintypes.WPARAM,
-            wintypes.LPARAM,
-        )
-        self._proc = wndproc_type(self._wnd_proc)
-
-        self._user32.GetWindowLongPtrW.restype = wintypes.LPARAM
-        self._user32.SetWindowLongPtrW.restype = wintypes.LPARAM
-        self._user32.CallWindowProcW.restype = wintypes.LPARAM
-
-        self._old_proc = self._user32.GetWindowLongPtrW(
-            self.hwnd,
-            self.GWLP_WNDPROC,
-        )
-        self._user32.SetWindowLongPtrW(
-            self.hwnd,
-            self.GWLP_WNDPROC,
-            self._ctypes.cast(self._proc, self._ctypes.c_void_p).value,
-        )
-        self._shell32.DragAcceptFiles(self.hwnd, True)
-
-    def close(self) -> None:
-        if not self._user32 or not self._old_proc:
-            return
-
-        self._shell32.DragAcceptFiles(self.hwnd, False)
-        self._user32.SetWindowLongPtrW(self.hwnd, self.GWLP_WNDPROC, self._old_proc)
-        self._old_proc = None
-
-    def _wnd_proc(self, hwnd, msg, wparam, lparam):
-        if msg == self.WM_DROPFILES and self._shell32:
-            dropped_files = self._extract_paths(wparam)
-            self._shell32.DragFinish(wparam)
-            self.widget.after_idle(lambda: self.on_drop(dropped_files))
-            return 0
-
-        return self._user32.CallWindowProcW(self._old_proc, hwnd, msg, wparam, lparam)
-
-    def _extract_paths(self, hdrop) -> list[str]:
-        file_count = self._shell32.DragQueryFileW(hdrop, 0xFFFFFFFF, None, 0)
-        dropped_files: list[str] = []
-
-        for index in range(file_count):
-            length = self._shell32.DragQueryFileW(hdrop, index, None, 0)
-            buffer = self._ctypes.create_unicode_buffer(length + 1)
-            self._shell32.DragQueryFileW(hdrop, index, buffer, length + 1)
-            dropped_files.append(buffer.value)
-
-        return dropped_files
+    return [path for path in paths if path]
 
 
 class RemoveTextExtraSpacesV3App:
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root: tk.Misc) -> None:
         self.root = root
         self.root.title("Remove Text Extra Spaces v3")
         self.root.geometry("1120x760")
@@ -188,16 +140,17 @@ class RemoveTextExtraSpacesV3App:
         self.selected_files: list[Path] = []
         self.option_vars = self._create_option_vars()
         self.status_var = tk.StringVar(
-            value="可拖曳 .txt 檔到視窗，或切換到「直接貼文字」模式處理短內容。"
+            value=(
+                "可拖曳 .txt 檔到視窗加入清單，或切換到「直接貼文字」模式處理短內容。"
+            )
         )
-        self.drop_target: WindowsFileDropTarget | None = None
+        self.drag_drop_enabled = False
 
         self._build_ui()
-        try:
-            self.drop_target = WindowsFileDropTarget(self.root, self.add_files)
-        except Exception:
-            self.drop_target = None
-            self.status_var.set("拖曳加入暫時不可用，請改用「新增檔案」。")
+        if self._configure_drag_and_drop() == 0:
+            self.status_var.set(
+                "拖曳加入暫時不可用，請改用「新增檔案」。若從原始碼執行，請先安裝 tkinterdnd2。"
+            )
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
     def _create_option_vars(self) -> dict[str, tk.BooleanVar]:
@@ -237,12 +190,12 @@ class RemoveTextExtraSpacesV3App:
         notebook = ttk.Notebook(body)
         notebook.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
 
-        file_tab = ttk.Frame(notebook, padding=12)
+        self.file_tab = ttk.Frame(notebook, padding=12)
         text_tab = ttk.Frame(notebook, padding=12)
-        notebook.add(file_tab, text="檔案模式")
+        notebook.add(self.file_tab, text="檔案模式")
         notebook.add(text_tab, text="直接貼文字")
 
-        self._build_file_tab(file_tab)
+        self._build_file_tab(self.file_tab)
         self._build_text_tab(text_tab)
         self._build_options_panel(body)
 
@@ -255,6 +208,35 @@ class RemoveTextExtraSpacesV3App:
             column=0,
             sticky="w",
         )
+
+    def _configure_drag_and_drop(self) -> int:
+        if TkinterDnD is None or DND_FILES is None or not hasattr(
+            self.root,
+            "drop_target_register",
+        ):
+            return 0
+
+        registered = 0
+        for widget in iter_widget_tree(self.root):
+            try:
+                widget.drop_target_register(DND_FILES)
+                widget.dnd_bind("<<DropEnter>>", self._accept_drop)
+                widget.dnd_bind("<<DropPosition>>", self._accept_drop)
+                widget.dnd_bind("<<Drop>>", self._handle_file_drop)
+                registered += 1
+            except (AttributeError, tk.TclError):
+                continue
+
+        self.drag_drop_enabled = registered > 0
+        return registered
+
+    def _accept_drop(self, _event=None):
+        return COPY
+
+    def _handle_file_drop(self, event) -> str:
+        file_paths = parse_drop_file_list(self.root, getattr(event, "data", ""))
+        self.add_files(file_paths)
+        return COPY or ""
 
     def _build_file_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
@@ -569,13 +551,11 @@ class RemoveTextExtraSpacesV3App:
         self.status_var.set("已清空輸入與輸出文字區。")
 
     def close(self) -> None:
-        if self.drop_target:
-            self.drop_target.close()
         self.root.destroy()
 
 
 def main() -> None:
-    root = tk.Tk()
+    root = TkinterDnD.Tk() if TkinterDnD is not None else tk.Tk()
     style = ttk.Style()
     if "vista" in style.theme_names():
         style.theme_use("vista")

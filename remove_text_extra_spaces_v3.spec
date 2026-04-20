@@ -1,12 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_all
+
+
+dnd_datas, dnd_binaries, dnd_hiddenimports = collect_all('tkinterdnd2')
 
 a = Analysis(
     ['remove_text_extra_spaces_v3.py'],
     pathex=[],
-    binaries=[],
-    datas=[],
-    hiddenimports=[],
+    binaries=dnd_binaries,
+    datas=dnd_datas,
+    hiddenimports=dnd_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
