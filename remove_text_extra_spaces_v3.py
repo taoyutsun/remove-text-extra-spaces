@@ -419,7 +419,7 @@ class RemoveTextExtraSpacesV3App:
                 f"{APP_TITLE} 由 {AUTHOR_NAME} 設計與維護。"
                 "歡迎使用與分享，並保留原作者與來源資訊。"
             ),
-            wraplength=240,
+            wraplength=210,
             justify="left",
         ).grid(row=0, column=0, sticky="w")
 
@@ -430,24 +430,25 @@ class RemoveTextExtraSpacesV3App:
         ).grid(row=1, column=0, sticky="w", pady=(8, 0))
 
         links_frame = ttk.Frame(author_frame)
-        links_frame.grid(row=2, column=0, sticky="w", pady=(8, 0))
+        links_frame.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        links_frame.columnconfigure(0, weight=1)
 
         self._create_link_label(links_frame, "亞瑟 ASK 部落格", AUTHOR_WEBSITE_URL).grid(
             row=0,
             column=0,
             sticky="w",
         )
-        ttk.Label(links_frame, text=" | ").grid(row=0, column=1, sticky="w")
         self._create_link_label(links_frame, "Facebook", AUTHOR_FACEBOOK_URL).grid(
-            row=0,
-            column=2,
+            row=1,
+            column=0,
             sticky="w",
+            pady=(4, 0),
         )
-        ttk.Label(links_frame, text=" | ").grid(row=0, column=3, sticky="w")
         self._create_link_label(links_frame, "檢視原始碼", AUTHOR_REPO_URL).grid(
-            row=0,
-            column=4,
+            row=2,
+            column=0,
             sticky="w",
+            pady=(4, 0),
         )
 
     def _create_link_label(
