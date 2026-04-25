@@ -1,4 +1,5 @@
 import re
+import webbrowser
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
@@ -13,6 +14,11 @@ except ImportError:  # pragma: no cover - source execution fallback only
 
 
 CJK_RANGE = r"\u4e00-\u9fff"
+APP_TITLE = "Remove Text Extra Spaces v3"
+AUTHOR_NAME = "Arthur Tao"
+AUTHOR_WEBSITE_URL = "https://taoyutsun.blogspot.com/"
+AUTHOR_FACEBOOK_URL = "https://facebook.com/arthurtaoyutsun"
+AUTHOR_REPO_URL = "https://github.com/taoyutsun/remove-text-extra-spaces"
 
 
 @dataclass(frozen=True)
@@ -133,7 +139,7 @@ def parse_drop_file_list(root: tk.Misc, raw_data: str) -> list[str]:
 class RemoveTextExtraSpacesV3App:
     def __init__(self, root: tk.Misc) -> None:
         self.root = root
-        self.root.title("Remove Text Extra Spaces v3")
+        self.root.title(APP_TITLE)
         self.root.geometry("1120x760")
         self.root.minsize(920, 640)
 
@@ -173,7 +179,7 @@ class RemoveTextExtraSpacesV3App:
 
         ttk.Label(
             header,
-            text="Remove Text Extra Spaces v3",
+            text=APP_TITLE,
             font=("Microsoft JhengHei UI", 18, "bold"),
         ).grid(row=0, column=0, sticky="w")
         ttk.Label(
@@ -391,6 +397,81 @@ class RemoveTextExtraSpacesV3App:
             wraplength=260,
             justify="left",
         ).grid(row=len(option_specs), column=0, sticky="w", pady=(14, 0))
+
+        ttk.Separator(options_frame, orient="horizontal").grid(
+            row=len(option_specs) + 1,
+            column=0,
+            sticky="ew",
+            pady=(16, 12),
+        )
+
+        author_frame = ttk.LabelFrame(options_frame, text="作者與版權", padding=10)
+        author_frame.grid(
+            row=len(option_specs) + 2,
+            column=0,
+            sticky="ew",
+        )
+        author_frame.columnconfigure(0, weight=1)
+
+        ttk.Label(
+            author_frame,
+            text=(
+                f"{APP_TITLE} 由 {AUTHOR_NAME} 設計與維護。"
+                "歡迎使用與分享，並保留原作者與來源資訊。"
+            ),
+            wraplength=240,
+            justify="left",
+        ).grid(row=0, column=0, sticky="w")
+
+        ttk.Label(
+            author_frame,
+            text=f"作者：{AUTHOR_NAME}",
+            font=("Microsoft JhengHei UI", 10, "bold"),
+        ).grid(row=1, column=0, sticky="w", pady=(8, 0))
+
+        links_frame = ttk.Frame(author_frame)
+        links_frame.grid(row=2, column=0, sticky="w", pady=(8, 0))
+
+        self._create_link_label(links_frame, "亞瑟 ASK 部落格", AUTHOR_WEBSITE_URL).grid(
+            row=0,
+            column=0,
+            sticky="w",
+        )
+        ttk.Label(links_frame, text=" | ").grid(row=0, column=1, sticky="w")
+        self._create_link_label(links_frame, "Facebook", AUTHOR_FACEBOOK_URL).grid(
+            row=0,
+            column=2,
+            sticky="w",
+        )
+        ttk.Label(links_frame, text=" | ").grid(row=0, column=3, sticky="w")
+        self._create_link_label(links_frame, "檢視原始碼", AUTHOR_REPO_URL).grid(
+            row=0,
+            column=4,
+            sticky="w",
+        )
+
+    def _create_link_label(
+        self,
+        parent: tk.Misc,
+        text: str,
+        url: str,
+    ) -> tk.Label:
+        label = tk.Label(
+            parent,
+            text=text,
+            fg="#0a66c2",
+            cursor="hand2",
+            font=("Microsoft JhengHei UI", 9, "underline"),
+            bg=self.root.cget("bg"),
+        )
+        label.bind("<Button-1>", lambda _event, target=url: self._open_external_url(target))
+        return label
+
+    def _open_external_url(self, url: str) -> None:
+        try:
+            webbrowser.open(url, new=2)
+        except Exception:
+            self.status_var.set(f"無法開啟連結：{url}")
 
     def choose_files(self) -> None:
         file_paths = filedialog.askopenfilenames(
