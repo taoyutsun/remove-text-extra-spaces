@@ -1,5 +1,7 @@
 # Remove Text Extra Spaces v3
 
+[繁體中文](README.md) | [English](README.en.md)
+
 `Remove Text Extra Spaces v3` 是一個專門用來整理 AI 語音轉文字、OCR 擷取文字、以及中英混排 TXT 內容的小工具。它可以快速清掉多餘空格、修正常見標點格式，並支援兩種使用方式：批次處理文字檔，或直接把短文字貼進 GUI 即時整理。
 
 相關文章：
